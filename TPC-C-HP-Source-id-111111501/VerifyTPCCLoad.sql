@@ -1,0 +1,330 @@
+------------------------------------------------------------------
+-- --
+-- File: VerifyTPCCLoad.SQL --
+-- Microsoft TPC-C Benchmark Kit Ver. 4.68 --
+-- Copyright Microsoft, 2006 --
+-- --
+------------------------------------------------------------------
+SET NOCOUNT ON
+PRINT ' '
+SELECT CONVERT(CHAR(30), GETDATE(), 21)
+PRINT ' '
+USE tpcc
+GO
+IF EXISTS (SELECT name
+FROM sysobjects
+WHERE name = 'TPCC_INFO' AND
+type = 'U')
+DROP TABLE TPCC_INFO
+GO
+PRINT 'WAREHOUSE TABLE'
+SELECT count_big(*)
+FROM warehouse
+GO
+PRINT 'DISTRICT TABLE = (10 * No of warehouses)'
+SELECT count_big(*)
+FROM district
+GO
+PRINT 'ITEM TABLE = 100,000'
+SELECT count_big(*)
+FROM item
+GO
+PRINT 'CUSTOMER TABLE = (30,000 * No of warehouses)'
+SELECT count_big(*)
+FROM customer
+GO
+PRINT 'ORDERS TABLE = (30,000 * No of warehouses)'
+SELECT count_big(*)
+FROM orders
+GO
+PRINT 'HISTORY TABLE = (30,000 * No of warehouses)'
+SELECT count_big(*)
+FROM history
+GO
+PRINT 'STOCK TABLE = (100,000 * No of warehouses)'
+SELECT count_big(*)
+FROM stock
+GO
+PRINT 'ORDER_LINE TABLE = (300,000 * No of warehouses + some change)'
+SELECT count_big(*)
+FROM order_line
+GO
+PRINT 'NEW_ORDER TABLE = (9000 * No of warehouses)'
+SELECT count_big(*)
+FROM new_order
+GO
+CREATE TABLE TPCC_INFO
+( INFO_DATE datetime,
+NUM_WAREHOUSE bigint,
+WAREHOUSE_TARGET bigint,
+NUM_DISTRICT bigint,
+DISTRICT_TARGET bigint,
+NUM_ITEM bigint,
+ITEM_TARGET bigint,
+NUM_CUSTOMER bigint,
+CUSTOMER_TARGET bigint,
+NUM_ORDERS bigint,
+ORDERS_TARGET bigint,
+ORDERS_TARGET_LOW bigint,
+ORDERS_TARGET_HIGH bigint,
+NUM_ORDER_LINE bigint,
+ORDER_LINE_TARGET bigint,
+ORDER_LINE_TARGET_LOW bigint,
+ORDER_LINE_TARGET_HIGH bigint,
+NUM_NEW_ORDER bigint,
+NEW_ORDER_TARGET bigint,
+NEW_ORDER_TARGET_LOW bigint,
+NEW_ORDER_TARGET_HIGH bigint,
+NUM_HISTORY bigint,
+HISTORY_TARGET bigint,
+NUM_STOCK bigint,
+STOCK_TARGET bigint)
+GO
+DECLARE @NUM_WAREHOUSE bigint,
+@WAREHOUSE_TARGET bigint,
+@NUM_DISTRICT bigint,
+@DISTRICT_TARGET bigint,
+@NUM_ITEM bigint,
+@ITEM_TARGET bigint,
+@NUM_CUSTOMER bigint,
+@CUSTOMER_TARGET bigint,
+@NUM_ORDERS bigint,
+@ORDERS_TARGET bigint,
+@ORDERS_TARGET_LOW bigint,
+@ORDERS_TARGET_HIGH bigint,
+@NUM_ORDER_LINE bigint,
+@ORDER_LINE_TARGET bigint,
+@ORDER_LINE_TARGET_LOW bigint,
+@ORDER_LINE_TARGET_HIGH bigint,
+@NUM_NEW_ORDER bigint,
+@NEW_ORDER_TARGET bigint,
+@NEW_ORDER_TARGET_LOW bigint,
+@NEW_ORDER_TARGET_HIGH bigint,
+@NUM_HISTORY bigint,
+@HISTORY_TARGET bigint,
+@NUM_STOCK bigint,
+@STOCK_TARGET bigint
+-- set the local variables prior to inserting them into the TPCC_INFO table
+SELECT @NUM_WAREHOUSE = COUNT_BIG(*)
+FROM warehouse
+SELECT @NUM_DISTRICT = COUNT_BIG(*)
+FROM district
+SELECT @NUM_ITEM = COUNT_BIG(*)
+FROM item
+SELECT @NUM_CUSTOMER = COUNT_BIG(*)
+FROM customer
+SELECT @NUM_ORDERS = COUNT_BIG(*)
+FROM orders
+SELECT @NUM_ORDER_LINE = COUNT_BIG(*)
+FROM order_line
+SELECT @NUM_NEW_ORDER = COUNT_BIG(*)
+FROM new_order
+SELECT @NUM_HISTORY = COUNT_BIG(*)
+FROM history
+SELECT @NUM_STOCK = COUNT_BIG(*)
+FROM stock
+--- now calculate and set the target values
+SELECT @WAREHOUSE_TARGET = @NUM_WAREHOUSE,
+@DISTRICT_TARGET = @NUM_WAREHOUSE * 10,
+@ITEM_TARGET = 100000,
+@CUSTOMER_TARGET = @NUM_WAREHOUSE * 30000,
+@ORDERS_TARGET = @NUM_WAREHOUSE * 30000,
+@ORDERS_TARGET_LOW = @ORDERS_TARGET - FLOOR(@ORDERS_TARGET * .01),
+@ORDERS_TARGET_HIGH = @ORDERS_TARGET + FLOOR(@ORDERS_TARGET * .01),
+@ORDER_LINE_TARGET = @NUM_WAREHOUSE * 300000,
+@ORDER_LINE_TARGET_LOW = @ORDER_LINE_TARGET - FLOOR(@ORDER_LINE_TARGET * .01),
+@ORDER_LINE_TARGET_HIGH = @ORDER_LINE_TARGET + FLOOR(@ORDER_LINE_TARGET * .01),
+@NEW_ORDER_TARGET = @NUM_WAREHOUSE * 9000,
+@NEW_ORDER_TARGET_LOW = @NEW_ORDER_TARGET - FLOOR(@NEW_ORDER_TARGET * .01),
+@NEW_ORDER_TARGET_HIGH = @NEW_ORDER_TARGET + FLOOR(@NEW_ORDER_TARGET * .01),
+@HISTORY_TARGET = @NUM_WAREHOUSE * 30000,
+@STOCK_TARGET = @NUM_WAREHOUSE * 100000
+--- insert the values into TPCC_INFO
+INSERT INTO TPCC_INFO VALUES (GETDATE(),
+@NUM_WAREHOUSE,
+@WAREHOUSE_TARGET,
+@NUM_DISTRICT,
+@DISTRICT_TARGET,
+@NUM_ITEM,
+@ITEM_TARGET,
+@NUM_CUSTOMER,
+@CUSTOMER_TARGET,
+@NUM_ORDERS,
+@ORDERS_TARGET,
+@ORDERS_TARGET_LOW,
+@ORDERS_TARGET_HIGH,
+@NUM_ORDER_LINE,
+@ORDER_LINE_TARGET,
+@ORDER_LINE_TARGET_LOW,
+@ORDER_LINE_TARGET_HIGH,
+@NUM_NEW_ORDER,
+@NEW_ORDER_TARGET,
+@NEW_ORDER_TARGET_LOW,
+@NEW_ORDER_TARGET_HIGH,
+@NUM_HISTORY,
+@HISTORY_TARGET,
+@NUM_STOCK,
+@STOCK_TARGET)
+GO
+--- output the row counts from the build
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| WAREHOUSE TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_WAREHOUSE AS 'Warehouse Rows',
+WAREHOUSE_TARGET AS 'Warehouse Target',
+CASE WHEN (NUM_WAREHOUSE = WAREHOUSE_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'Warehouse Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| DISTRICT TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_DISTRICT AS 'District Rows',
+DISTRICT_TARGET AS 'District Target',
+CASE WHEN (NUM_DISTRICT = DISTRICT_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'District Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| ITEM TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_ITEM AS 'Item Rows',
+ITEM_TARGET AS 'Item Target',
+CASE WHEN (NUM_ITEM = ITEM_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'Item Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| CUSTOMER TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_CUSTOMER AS 'Customer Rows',
+CUSTOMER_TARGET AS 'Customer Target',
+CASE WHEN (NUM_CUSTOMER = CUSTOMER_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'Customer Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| ORDERS TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_ORDERS AS 'Orders Rows',
+ORDERS_TARGET AS 'Orders Target',
+CASE WHEN (NUM_ORDERS = ORDERS_TARGET)
+THEN 'OK!'
+WHEN (NUM_ORDERS BETWEEN ORDERS_TARGET_LOW AND ORDERS_TARGET_HIGH)
+THEN 'OK! (within 1%)'
+ELSE 'ERROR!!!'
+END AS 'Orders Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| ORDER LINE TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_ORDER_LINE AS 'Order Line Rows',
+ORDER_LINE_TARGET AS 'Order Line Target',
+CASE WHEN (NUM_ORDER_LINE = ORDER_LINE_TARGET)
+THEN 'OK!'
+WHEN (NUM_ORDER_LINE BETWEEN ORDER_LINE_TARGET_LOW AND ORDER_LINE_TARGET_HIGH)
+THEN 'OK! (within 1%)'
+ELSE 'ERROR!!!'
+END AS 'Order Line Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| NEW ORDER TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_NEW_ORDER AS 'New Order Rows',
+NEW_ORDER_TARGET AS 'New Order Target',
+CASE WHEN (NUM_NEW_ORDER = NEW_ORDER_TARGET)
+THEN 'OK!'
+WHEN (NUM_NEW_ORDER BETWEEN NEW_ORDER_TARGET_LOW AND NEW_ORDER_TARGET_HIGH)
+THEN 'OK! (within 1%)'
+ELSE 'ERROR!!!'
+END AS 'New Order Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| HISTORY TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_HISTORY AS 'History Rows',
+HISTORY_TARGET AS 'History Target',
+CASE WHEN (NUM_HISTORY = HISTORY_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'History Message'
+FROM TPCC_INFO
+GO
+PRINT ''
+PRINT ''
+PRINT '---------------------------'
+PRINT '| STOCK TABLE |'
+PRINT '---------------------------'
+SELECT TOP 1
+CONVERT(CHAR(30),INFO_DATE,21) AS 'Date',
+NUM_STOCK AS 'Stock Rows',
+STOCK_TARGET AS 'Stock Target',
+CASE WHEN (NUM_STOCK = STOCK_TARGET)
+THEN 'OK!'
+ELSE 'ERROR!!!'
+END AS 'Stock Message'
+FROM TPCC_INFO
+GO
+------------------
+-- Check Indexes
+------------------
+USE tpcc
+GO
+PRINT ''
+PRINT ''
+PRINT '----------------------------'
+PRINT '| TPC-C INDEXES |'
+PRINT '----------------------------'
+EXEC sp_helpindex warehouse
+EXEC sp_helpindex district
+EXEC sp_helpindex item
+EXEC sp_helpindex customer
+EXEC sp_helpindex orders
+EXEC sp_helpindex order_line
+EXEC sp_helpindex new_order
+EXEC sp_helpindex history
+EXEC sp_helpindex stock
+GO
